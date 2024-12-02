@@ -1,10 +1,11 @@
 package com.sangto.identity_service.service;
 
+import com.sangto.identity_service.constant.PredefineRole;
 import com.sangto.identity_service.dto.request.UserCreationRequest;
 import com.sangto.identity_service.dto.request.UserUpdateRequest;
 import com.sangto.identity_service.dto.response.UserResponse;
+import com.sangto.identity_service.entity.Role;
 import com.sangto.identity_service.entity.User;
-import com.sangto.identity_service.enums.Role;
 import com.sangto.identity_service.exception.AppException;
 import com.sangto.identity_service.exception.ErrorCode;
 import com.sangto.identity_service.mapper.UserMapper;
@@ -43,8 +44,9 @@ public class UserService {
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        //var roles = roleRepository.findAllById(request.getRoles());
-        //user.setRoles(new HashSet<>(roles));
+        HashSet<Role> roles = new HashSet<>();
+        roleRepository.findById(PredefineRole.USER_ROLE).ifPresent(roles::add);
+        user.setRoles(roles);
 
         return userMapper.toUserResponse(userRepository.save(user));
     }
@@ -82,7 +84,7 @@ public class UserService {
                 .map(userMapper::toUserResponse).toList();
     }
 
-    @PostAuthorize("returnObject.username == authentication.name")
+    @PostAuthorize("hasRole('ADMIN')")
     public UserResponse getUser(String id) {
 
         log.info("In method get user by Id");
